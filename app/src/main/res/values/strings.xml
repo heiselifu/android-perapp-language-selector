@@ -115,6 +115,20 @@
     <string name="troubleshooting_battery_title">Battery optimisation killed Shizuku.</string>
     <string name="troubleshooting_battery_body">Exclude Shizuku from battery optimisation so the service is not stopped while it is idle.</string>
     <string name="shizuku_documentation">Shizuku documentation</string>
+
+    <!-- Root is an optional extra on top of the Shizuku flow; see RootRepository. -->
+    <string name="root_section_title">Root access (optional)</string>
+    <string name="root_section_body">Everything above works without root. If this device is rooted, you can also grant this app root access — it is asked for only when you tap the button below, never on its own.</string>
+    <string name="root_unknown">Root not requested yet</string>
+    <string name="root_unknown_body">Tap Request root to ask your root manager for a privileged shell. The prompt comes from your root manager app, not from this one.</string>
+    <string name="root_granted">Root granted</string>
+    <string name="root_granted_body">su answered with a privileged shell (uid 0). Locale changes still go through Shizuku in this version.</string>
+    <string name="root_denied">Root refused</string>
+    <string name="root_denied_body">This device has su, but the request was not granted or was dismissed. Tap again to ask once more.</string>
+    <string name="root_not_available">No root on this device</string>
+    <string name="root_not_available_body">No su binary was found. Shizuku remains the only way to change other apps’ locales here.</string>
+    <string name="root_request">Request root</string>
+    <string name="root_requesting">Requesting…</string>
     <string name="connected">Connected</string>
     <string name="connected_body">Shizuku is running and this app is authorised. Nothing else to do.</string>
     <string name="waiting_for_permission">Waiting for permission</string>
@@ -181,4 +195,17 @@
     <string name="help_support_body">If you encounter a problem, contact support@takeruf.com. Include a description of the issue and the diagnostics below.</string>
     <string name="help_contact_support">Contact support</string>
     <string name="no_email_app_available">No email app available. You can copy the address instead.</string>
+    <string name="bulk_start_button">Set one language for many apps</string>
+    <string name="bulk_start_hint">User apps first · defaults to Simplified Chinese (zh-CN)</string>
+    <string name="bulk_select_system_apps">Select system apps</string>
+    <string name="bulk_no_system_apps">No system apps in the current list. Turn on “Show system apps” in the menu first.</string>
+    <string name="bulk_select_all_visible">Select shown (%1$d)</string>
+    <string name="bulk_select_user_apps">Select user apps</string>
+    <string name="bulk_invert_selection">Invert</string>
+    <string name="bulk_report_title">Bulk result</string>
+    <string name="bulk_report_summary">%1$d of %2$d apps changed.</string>
+    <string name="bulk_report_failures_header">Failed apps and reasons:</string>
+    <string name="bulk_report_all_ok">Every selected app was changed successfully.</string>
+    <string name="bulk_failure_line">%1$s — %2$s</string>
+    <string name="bulk_report_more">…and %1$d more</string>
 </resources>

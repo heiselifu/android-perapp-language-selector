@@ -111,6 +111,20 @@
     <string name="troubleshooting_battery_title">电池优化停止了 Shizuku。</string>
     <string name="troubleshooting_battery_body">将 Shizuku 排除在电池优化之外，以免服务空闲时被停止。</string>
     <string name="shizuku_documentation">Shizuku 文档</string>
+
+    <!-- Root 是 Shizuku 流程之外的额外选项，见 RootRepository。 -->
+    <string name="root_section_title">Root 权限（可选）</string>
+    <string name="root_section_body">以上流程无需 Root 即可使用。若本设备已 Root，也可以授予本应用 Root 权限；仅当你点击下方按钮时才会申请，应用不会自行发起。</string>
+    <string name="root_unknown">尚未申请 Root 权限</string>
+    <string name="root_unknown_body">点击“申请 Root 权限”，向本设备的 Root 管理器申请一个特权 shell。授权弹窗由 Root 管理器弹出，而非本应用。</string>
+    <string name="root_granted">已获得 Root 权限</string>
+    <string name="root_granted_body">su 已返回特权 shell（uid 0）。当前版本中，更改语言区域仍通过 Shizuku 执行。</string>
+    <string name="root_denied">Root 申请被拒绝</string>
+    <string name="root_denied_body">本设备存在 su，但申请未获授权或被取消。可再次点击重新申请。</string>
+    <string name="root_not_available">本设备没有 Root</string>
+    <string name="root_not_available_body">未找到 su。在此设备上，Shizuku 仍是更改其他应用语言的唯一途径。</string>
+    <string name="root_request">申请 Root 权限</string>
+    <string name="root_requesting">申请中…</string>
     <string name="connected">已连接</string>
     <string name="connected_body">Shizuku 正在运行且本应用已获授权。无需其他操作。</string>
     <string name="waiting_for_permission">等待授权</string>
@@ -176,4 +190,17 @@
     <string name="help_support_body">如遇到问题，请联系 support@takeruf.com，并附上问题描述和下方的诊断信息。</string>
     <string name="help_contact_support">联系支持</string>
     <string name="no_email_app_available">没有可用的邮件应用。你可以复制邮箱地址。</string>
+    <string name="bulk_start_button">一键批量设置应用语言</string>
+    <string name="bulk_start_hint">用户应用优先 · 默认简体中文（zh-CN）</string>
+    <string name="bulk_select_system_apps">一键选择系统应用</string>
+    <string name="bulk_no_system_apps">当前列表没有系统应用，请先在右上角菜单中开启「显示系统应用」。</string>
+    <string name="bulk_select_all_visible">全选（当前 %1$d 个）</string>
+    <string name="bulk_select_user_apps">仅选用户应用</string>
+    <string name="bulk_invert_selection">反选</string>
+    <string name="bulk_report_title">批量设置结果</string>
+    <string name="bulk_report_summary">成功 %1$d 个，共 %2$d 个。</string>
+    <string name="bulk_report_failures_header">失败应用及原因：</string>
+    <string name="bulk_report_all_ok">所选应用已全部设置成功。</string>
+    <string name="bulk_failure_line">%1$s —— %2$s</string>
+    <string name="bulk_report_more">……另有 %1$d 个失败</string>
 </resources>

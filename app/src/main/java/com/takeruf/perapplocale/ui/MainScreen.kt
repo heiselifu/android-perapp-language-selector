@@ -31,11 +31,13 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -86,6 +88,12 @@ fun MainScreen(
     onSelectionToggle: (AppInfo) -> Unit,
     onClearSelection: () -> Unit,
     onChangeSelectedLanguage: () -> Unit,
+    canStartBulk: Boolean,
+    onSelectAllVisible: () -> Unit,
+    onSelectUserApps: () -> Unit,
+    onInvertSelection: () -> Unit,
+    onStartBulk: () -> Unit,
+    onSelectSystemApps: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val selectionMode = selectedTargets.isNotEmpty()
@@ -253,6 +261,63 @@ fun MainScreen(
                             )
                         },
                     )
+                }
+            }
+
+            if (selectionMode) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(
+                        onClick = onSelectAllVisible,
+                        enabled = canChangeSelection,
+                    ) {
+                        Text(stringResource(R.string.bulk_select_all_visible, state.apps.size))
+                    }
+                    TextButton(
+                        onClick = onSelectUserApps,
+                        enabled = canChangeSelection,
+                    ) {
+                        Text(stringResource(R.string.bulk_select_user_apps))
+                    }
+                    TextButton(
+                        onClick = onInvertSelection,
+                        enabled = canChangeSelection,
+                    ) {
+                        Text(stringResource(R.string.bulk_invert_selection))
+                    }
+                }
+            } else if (!state.loadingApps && state.apps.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    FilledTonalButton(
+                        onClick = onStartBulk,
+                        enabled = canStartBulk,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.bulk_start_button))
+                    }
+                    Text(
+                        stringResource(R.string.bulk_start_hint),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                    OutlinedButton(
+                        onClick = onSelectSystemApps,
+                        enabled = canStartBulk,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                    ) {
+                        Text(stringResource(R.string.bulk_select_system_apps))
+                    }
                 }
             }
 

@@ -55,11 +55,13 @@ import kotlinx.coroutines.withContext
 fun BulkLocaleSheet(
     appCount: Int,
     enabled: Boolean,
+    /** Pre-selected language tag, so the common case is a single tap. */
+    defaultTag: String? = null,
     onDismiss: () -> Unit,
     onContinue: (LocaleOption) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var selectedTag by remember { mutableStateOf<String?>(null) }
+    var selectedTag by remember(defaultTag) { mutableStateOf(defaultTag) }
     var query by remember { mutableStateOf("") }
 
     val catalog by produceState<List<LocaleEntry>?>(initialValue = null) {
@@ -168,7 +170,7 @@ fun BulkLocaleSheet(
 
             Button(
                 onClick = { selection?.let(onContinue) },
-                enabled = enabled && selection != null,
+                enabled = enabled && selection != null && appCount > 0,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.continue_to_confirmation))

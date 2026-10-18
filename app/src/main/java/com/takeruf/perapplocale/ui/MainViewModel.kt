@@ -67,7 +67,16 @@ sealed interface UiEvent {
     data class Launch(val intent: Intent, val appliedMessage: String) : UiEvent
     /** Open via LauncherApps with this explicit profile, never a current-user Intent. */
     data class LaunchProfile(val packageName: String, val userId: Int, val appliedMessage: String) : UiEvent
+    /** Outcome of a bulk run: counts plus the reason for every app that refused the change. */
+    data class BulkReport(
+        val succeeded: Int,
+        val total: Int,
+        val failures: List<BulkFailure>,
+    ) : UiEvent
 }
+
+/** One app a bulk run could not change, with the reason the framework returned. */
+data class BulkFailure(val label: String, val packageName: String, val reason: String)
 
 class MainViewModel(
     application: Application,
@@ -470,7 +479,12 @@ class MainViewModel(
         }
     }
 
-    /** Applies one locale to every target, even when a target already has another override. */
+    /**
+     * Applies one locale to every target, even when a target already has another override.
+     *
+     * Every app is written on its own: one refusal never aborts the run, and each failure keeps
+     * the framework's reason so the UI can report it per app.
+     */
     fun applyBulk(targets: Set<AppTarget>, option: LocaleOption) {
         if (targets.isEmpty() || resettingAll.value || busyTargets.value.isNotEmpty()) return
         viewModelScope.launch {
@@ -478,6 +492,8 @@ class MainViewModel(
             val ownPackageName = getApplication<Application>().packageName
             val currentUserId = Process.myUid() / 100_000
             val succeeded = mutableSetOf<AppTarget>()
+            val failures = mutableListOf<BulkFailure>()
+            val labels = rawApps.value.associate { it.target to it.label }
 
             try {
                 // Do our own package last because changing it can recreate the Activity.
@@ -495,6 +511,13 @@ class MainViewModel(
                     }.onSuccess {
                         succeeded += target
                         updateLocalTag(target, option.tag)
+                    }.onFailure { error ->
+                        failures += BulkFailure(
+                            label = labels[target] ?: target.packageName,
+                            packageName = target.packageName,
+                            reason = error.message?.takeIf { it.isNotBlank() }
+                                ?: error.javaClass.simpleName,
+                        )
                     }
                 }
 
@@ -502,25 +525,7 @@ class MainViewModel(
                     settingsStore.recordAssignments(succeeded.map(::assignmentKeyFor), option.tag)
                 }
 
-                val total = targets.size
-                when (succeeded.size) {
-                    total -> events.send(
-                        UiEvent.Message(text(R.string.bulk_change_complete, total)),
-                    )
-                    0 -> events.send(
-                        UiEvent.Error(text(R.string.bulk_change_failed, total)),
-                    )
-                    else -> events.send(
-                        UiEvent.Error(
-                            text(
-                                R.string.bulk_change_partial,
-                                succeeded.size,
-                                total,
-                                total - succeeded.size,
-                            ),
-                        ),
-                    )
-                }
+                events.send(UiEvent.BulkReport(succeeded.size, targets.size, failures.toList()))
             } catch (e: Exception) {
                 events.send(
                     UiEvent.Error(text(R.string.error_unexpected, e.message ?: e.javaClass.simpleName)),

@@ -13,6 +13,10 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.AlertDialog
@@ -22,11 +26,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.takeruf.perapplocale.data.AppInfo
+import kotlinx.coroutines.launch
 import com.takeruf.perapplocale.data.AppTarget
 import android.os.Process
 import android.os.UserHandle
@@ -66,11 +75,13 @@ class MainActivity : ComponentActivity() {
                 val state by viewModel.uiState.collectAsStateWithLifecycle()
                 val snackbarHostState = remember { SnackbarHostState() }
                 val context = LocalContext.current
+                val scope = rememberCoroutineScope()
 
                 var sheetApp by remember { mutableStateOf<AppInfo?>(null) }
                 var selectedTargets by remember { mutableStateOf<Set<AppTarget>>(emptySet()) }
                 var bulkSheetOpen by remember { mutableStateOf(false) }
                 var pendingBulkOption by remember { mutableStateOf<LocaleOption?>(null) }
+                var bulkReport by remember { mutableStateOf<UiEvent.BulkReport?>(null) }
                 var showPackageVisibilityDisclosure by rememberSaveable { mutableStateOf(true) }
                 var screen by rememberSaveable { mutableStateOf(Screen.LIST) }
                 // The setup guide is reachable from the list and from Help, and back has to undo
@@ -92,6 +103,7 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     viewModel.uiEvents.collect { event ->
                         when (event) {
+                            is UiEvent.BulkReport -> bulkReport = event
                             is UiEvent.Message -> snackbarHostState.showSnackbar(event.text)
                             is UiEvent.Error -> snackbarHostState.showSnackbar(
                                 message = event.text,
@@ -245,6 +257,57 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
+                bulkReport?.let { report ->
+                    AlertDialog(
+                        onDismissRequest = { bulkReport = null },
+                        title = { Text(context.getString(R.string.bulk_report_title)) },
+                        text = {
+                            Column {
+                                Text(
+                                    context.getString(
+                                        R.string.bulk_report_summary,
+                                        report.succeeded,
+                                        report.total,
+                                    ),
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                if (report.failures.isEmpty()) {
+                                    Text(context.getString(R.string.bulk_report_all_ok))
+                                } else {
+                                    Text(
+                                        context.getString(R.string.bulk_report_failures_header),
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    report.failures.take(MAX_REPORTED_FAILURES).forEach { failure ->
+                                        Text(
+                                            context.getString(
+                                                R.string.bulk_failure_line,
+                                                failure.label,
+                                                failure.reason,
+                                            ),
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
+                                    }
+                                    if (report.failures.size > MAX_REPORTED_FAILURES) {
+                                        Text(
+                                            context.getString(
+                                                R.string.bulk_report_more,
+                                                report.failures.size - MAX_REPORTED_FAILURES,
+                                            ),
+                                            style = MaterialTheme.typography.bodySmall,
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { bulkReport = null }) {
+                                Text(context.getString(R.string.close))
+                            }
+                        },
+                    )
+                }
+
                 when (screen) {
                     Screen.LIST -> {
                         MainScreen(
@@ -281,11 +344,61 @@ class MainActivity : ComponentActivity() {
                             },
                             onClearSelection = { selectedTargets = emptySet() },
                             onChangeSelectedLanguage = { bulkSheetOpen = true },
+                            canStartBulk = state.shizukuReady &&
+                                !state.resettingAll &&
+                                state.busyTargets.isEmpty(),
+                            onSelectAllVisible = {
+                                selectedTargets = state.apps.mapTo(mutableSetOf()) { it.target }
+                            },
+                            onSelectUserApps = {
+                                selectedTargets = state.apps
+                                    .filterNot { it.isSystemApp }
+                                    .mapTo(mutableSetOf()) { it.target }
+                            },
+                            onInvertSelection = {
+                                val next = selectedTargets.toMutableSet()
+                                state.apps.forEach { app ->
+                                    if (!next.remove(app.target)) next.add(app.target)
+                                }
+                                selectedTargets = next
+                            },
+                            onStartBulk = {
+                                // The list can hold system apps only (a package-name search, a
+                                // language filter, …). Picking the user apps then used to leave the
+                                // set empty and the tap silently did nothing, so fall back to
+                                // whatever is shown to keep the entry always responsive.
+                                val userApps = state.apps
+                                    .filterNot { it.isSystemApp }
+                                    .mapTo(mutableSetOf()) { it.target }
+                                val targets = userApps.ifEmpty {
+                                    state.apps.mapTo(mutableSetOf()) { it.target }
+                                }
+                                selectedTargets = targets
+                                if (targets.isNotEmpty()) bulkSheetOpen = true
+                            },
+                            onSelectSystemApps = {
+                                // One tap selects every system app the current filter/search
+                                // shows, including entries from other profiles.
+                                val systemApps = state.apps
+                                    .filter { it.isSystemApp }
+                                    .mapTo(mutableSetOf()) { it.target }
+                                if (systemApps.isEmpty()) {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            context.getString(R.string.bulk_no_system_apps),
+                                        )
+                                    }
+                                } else {
+                                    selectedTargets = systemApps
+                                    bulkSheetOpen = true
+                                }
+                            },
                         )
 
                         if (bulkSheetOpen) {
                             BulkLocaleSheet(
                                 appCount = selectedTargets.size,
+                                defaultTag = DEFAULT_BULK_TAG,
                                 enabled = !state.resettingAll &&
                                     state.busyTargets.isEmpty() &&
                                     (state.shizukuReady || selectedTargets.all {
@@ -391,5 +504,11 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         const val SHIZUKU_PACKAGE = "moe.shizuku.privileged.api"
+
+        /** Pre-selected batch target; every other language stays one tap away in the picker. */
+        const val DEFAULT_BULK_TAG = "zh-CN"
+
+        /** Cap the failure list so the result dialog stays readable. */
+        const val MAX_REPORTED_FAILURES = 8
     }
 }
